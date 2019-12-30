@@ -62,7 +62,7 @@ PKG_CHECK_MODULES(vte, [vte-2.91 >= 0.20.0],, [
 else
 PKG_CHECK_MODULES(vte, [vte >= 0.20.0])
 fi
-CFLAGS="$CFLAGS $glib_CFLAGS $gtk_CFLAGS $vte_CFLAGS"
+CFLAGS="$CFLAGS $glib_CFLAGS $gtk_CFLAGS $vte_CFLAGS -Wno-deprecated-declarations"
 LIBS="$LIBS $glib_LIBS $gtk_LIBS $vte_LIBS $x11_LIBS"
 
 if test x"$enable_more_warnings" = x"yes"; then
