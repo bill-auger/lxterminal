@@ -42,6 +42,7 @@
 /* Utilities. */
 static void terminal_get_border(Term * term, GtkBorder * border);
 static void terminal_save_size(LXTerminal * terminal);
+static gboolean terminal_should_show_tabs(LXTerminal * terminal);
 static void terminal_tab_set_position(GtkWidget * notebook, gint tab_position);
 static gchar * terminal_get_current_dir(LXTerminal * terminal);
 static const gchar * terminal_get_preferred_shell();
@@ -404,6 +405,13 @@ static void terminal_save_size(LXTerminal * terminal)
     terminal->row = vte_terminal_get_row_count(VTE_TERMINAL(term->vte));
 }
 
+static gboolean terminal_should_show_tabs(LXTerminal * terminal)
+{
+  double n_tabs = gtk_notebook_get_n_pages(GTK_NOTEBOOK(terminal->notebook));
+
+  return n_tabs > 1 && !get_setting()->hide_tabs;
+}
+
 static void terminal_new_tab(LXTerminal * terminal, const gchar * label)
 {
     Term * term;
@@ -438,7 +446,7 @@ static void terminal_new_tab(LXTerminal * terminal, const gchar * label)
     /* Make the new terminal's tab current and, if we went from one to more than one tab,
      * turn the tab display on. */
     gtk_notebook_set_current_page(GTK_NOTEBOOK(term->parent->notebook), term->index);
-    if (term->index > 0)
+    if (terminal_should_show_tabs(terminal))
     {
         terminal_save_size(terminal);
         gtk_notebook_set_show_tabs(GTK_NOTEBOOK(term->parent->notebook), TRUE);
@@ -909,8 +917,8 @@ static void terminal_child_exited_event(VteTerminal * vte, Term * term)
         terminal_free(term);
 
         /* If only one page is left, hide the tab. */
-        if (gtk_notebook_get_n_pages(GTK_NOTEBOOK(terminal->notebook)) == 1)
-            gtk_notebook_set_show_tabs(GTK_NOTEBOOK(terminal->notebook), FALSE);
+//         terminal_save_size(terminal);
+        gtk_notebook_set_show_tabs(GTK_NOTEBOOK(terminal->notebook), terminal_should_show_tabs(terminal));
 
         /* update <ALT>n status */
         terminal_update_alt(terminal);
@@ -1574,7 +1582,7 @@ LXTerminal * lxterminal_initialize(LXTermWindow * lxtermwin, CommandArguments * 
     /* Create a notebook as the child of the vertical box. */
     terminal->notebook = gtk_notebook_new();
     gtk_notebook_set_scrollable(GTK_NOTEBOOK(terminal->notebook), TRUE);
-    gtk_notebook_set_show_tabs(GTK_NOTEBOOK(terminal->notebook), FALSE);
+    gtk_notebook_set_show_tabs(GTK_NOTEBOOK(terminal->notebook), terminal_should_show_tabs(terminal));
     gtk_notebook_set_show_border(GTK_NOTEBOOK(terminal->notebook), FALSE);
     gtk_box_pack_start(GTK_BOX(terminal->box), terminal->notebook, TRUE, TRUE, 0);
 
@@ -1729,6 +1737,9 @@ static void terminal_settings_apply(LXTerminal * terminal)
     {
         gtk_widget_show(terminal->menu);
     }
+
+//     terminal_save_size(terminal);
+    gtk_notebook_set_show_tabs(GTK_NOTEBOOK(terminal->notebook), terminal_should_show_tabs(terminal));
 
     /* Apply settings to all tabs. */
     guint i;
